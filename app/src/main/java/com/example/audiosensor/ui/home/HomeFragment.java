@@ -6,11 +6,13 @@ import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.Chronometer;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,16 +34,17 @@ import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
 public class HomeFragment extends Fragment {
 
-
+    private Chronometer chronometer;
     private Button startbtn, stopbtn, playbtn, stopplay;
     private MediaRecorder mRecorder;
     private MediaPlayer mPlayer;
     private static final String LOG_TAG = "AudioRecording";
     private static String mFileName = null;
-    public static final int REQUEST_AUDIO_PERMISSION_CODE = 1;
+    /*public static final int REQUEST_AUDIO_PERMISSION_CODE = 1;*/
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_home, container, false);
+        chronometer=root.findViewById(R.id.chronometer);
         startbtn = root.findViewById(R.id.btnRecord);
         stopbtn =  root.findViewById(R.id.btnStop);
         playbtn = root.findViewById(R.id.btnPlay);
@@ -55,7 +58,8 @@ public class HomeFragment extends Fragment {
         startbtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(CheckPermissions()) {
+                    chronometer.setBase(SystemClock.elapsedRealtime());
+                    chronometer.start();
                     stopbtn.setEnabled(true);
                     startbtn.setEnabled(false);
                     playbtn.setEnabled(false);
@@ -74,16 +78,13 @@ public class HomeFragment extends Fragment {
                     Toast.makeText(getContext(), "Recording Started", Toast.LENGTH_LONG).show();
                     Toast.makeText(getContext(), mFileName, Toast.LENGTH_LONG).show();
 
-                }
-                else
-                {
-                    RequestPermissions();
-                }
             }
         });
         stopbtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                chronometer.stop();
+                chronometer.setBase(SystemClock.elapsedRealtime());
                 stopbtn.setEnabled(false);
                 startbtn.setEnabled(true);
                 playbtn.setEnabled(true);
@@ -125,29 +126,5 @@ public class HomeFragment extends Fragment {
             }
         });
         return root;
-    }
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        switch (requestCode) {
-            case REQUEST_AUDIO_PERMISSION_CODE:
-                if (grantResults.length> 0) {
-                    boolean permissionToRecord = grantResults[0] == PackageManager.PERMISSION_GRANTED;
-                    boolean permissionToStore = grantResults[1] ==  PackageManager.PERMISSION_GRANTED;
-                    if (permissionToRecord && permissionToStore) {
-                        Toast.makeText(getContext(), "Permission Granted", Toast.LENGTH_LONG).show();
-                    } else {
-                        Toast.makeText(getContext(),"Permission Denied",Toast.LENGTH_LONG).show();
-                    }
-                }
-                break;
-        }
-    }
-    public boolean CheckPermissions() {
-        int result = ContextCompat.checkSelfPermission(getContext(), WRITE_EXTERNAL_STORAGE);
-        int result1 = ContextCompat.checkSelfPermission(getContext(), RECORD_AUDIO);
-        return result == PackageManager.PERMISSION_GRANTED && result1 == PackageManager.PERMISSION_GRANTED;
-    }
-    private void RequestPermissions() {
-        ActivityCompat.requestPermissions((Activity) getContext(), new String[]{RECORD_AUDIO, WRITE_EXTERNAL_STORAGE}, REQUEST_AUDIO_PERMISSION_CODE);
     }
 }
