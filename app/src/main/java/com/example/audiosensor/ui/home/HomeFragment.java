@@ -24,8 +24,10 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 
+import com.example.audiosensor.DBHelper;
 import com.example.audiosensor.MainActivity;
 import com.example.audiosensor.R;
+import com.example.audiosensor.RecordingItem;
 
 import java.io.IOException;
 
@@ -40,10 +42,15 @@ public class HomeFragment extends Fragment {
     private MediaPlayer mPlayer;
     private static final String LOG_TAG = "AudioRecording";
     private static String mFileName = null;
+    private static String filename = null;
+    DBHelper dbHelper;
+    long mStartingTimeMilis=0;
+    long mElapsedMilis=0;
     /*public static final int REQUEST_AUDIO_PERMISSION_CODE = 1;*/
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_home, container, false);
+        dbHelper=new DBHelper(getContext());
         chronometer=root.findViewById(R.id.chronometer);
         startbtn = root.findViewById(R.id.btnRecord);
         stopbtn =  root.findViewById(R.id.btnStop);
@@ -52,13 +59,24 @@ public class HomeFragment extends Fragment {
         stopbtn.setEnabled(false);
         playbtn.setEnabled(false);
         stopplay.setEnabled(false);
+        filename="";
+        long tsLong=System.currentTimeMillis()/1000;
+        String ts=String.valueOf(tsLong);
         mFileName = Environment.getExternalStorageDirectory().getAbsolutePath();
-        mFileName += "/AudioRecording.3gp";
+        mFileName += "/AudioRecording_"+ts+".3gp";
+        filename += "/AudioRecording_"+ts;
 
         startbtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+/*                long tsLong=System.currentTimeMillis()/100000;
+        String ts=String.valueOf(tsLong);
+        filename="";
+        mFileName = Environment.getExternalStorageDirectory().getAbsolutePath();
+        mFileName += "/AudioRecording_"+ts+".3gp";
+        filename += "/AudioRecording_"+ts;*/
                     chronometer.setBase(SystemClock.elapsedRealtime());
+                    mStartingTimeMilis=System.currentTimeMillis();
                     chronometer.start();
                     stopbtn.setEnabled(true);
                     startbtn.setEnabled(false);
@@ -83,8 +101,10 @@ public class HomeFragment extends Fragment {
         stopbtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
                 chronometer.stop();
                 chronometer.setBase(SystemClock.elapsedRealtime());
+                mElapsedMilis=System.currentTimeMillis()-mStartingTimeMilis;
                 stopbtn.setEnabled(false);
                 startbtn.setEnabled(true);
                 playbtn.setEnabled(true);
@@ -92,6 +112,12 @@ public class HomeFragment extends Fragment {
                 mRecorder.stop();
                 mRecorder.release();
                 mRecorder = null;
+
+                // add database
+                RecordingItem recordingItem=new RecordingItem(filename,mFileName,
+                        mElapsedMilis,System.currentTimeMillis());
+                dbHelper.addRecording(recordingItem);
+                mStartingTimeMilis=0;
                 Toast.makeText(getContext(), "Recording Stopped", Toast.LENGTH_LONG).show();
             }
         });
